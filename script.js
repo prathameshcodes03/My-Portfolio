@@ -443,3 +443,310 @@ gsap.to("#page3",{
     scroller:`#main`
   }
 })
+
+
+
+// ─────────────────────────────────────────────────────────────
+//  TECHSTACK BALLS — exact replica of video
+//  Pure white/pearl 3D spheres with real tech logos
+//  Uses Three.js r128 + canvas textures
+//  Drop-in: <script src="three.min.js"></script>
+//           <script src="techstack-balls-v2.js"></script>
+//           <script>initTechBalls()</script>
+// ─────────────────────────────────────────────────────────────
+
+function initTechBalls(canvasId) {
+
+  // ── TECH DATA — exactly the ones visible in video ──
+  const TECHS = [
+    { name:'JavaScript', abbr:'JS',       bg:'#f0db4f', fg:'#000000', font:'900 italic' },
+    { name:'TypeScript', abbr:'TS',       bg:'#3178c6', fg:'#ffffff', font:'900' },
+    { name:'React',      abbr:'React',    bg:'#61dafb', fg:'#1a1a2e', font:'700' },
+    { name:'Next.js',    abbr:'NEXT',     bg:'#ffffff', fg:'#000000', font:'900' },
+    { name:'Node.js',    abbr:'Node',     bg:'#5fa04e', fg:'#ffffff', font:'700' },
+    { name:'MongoDB',    abbr:'mongo',    bg:'#ffffff', fg:'#13aa52', font:'400 italic' },
+    { name:'MySQL',      abbr:'SQL',      bg:'#ffffff', fg:'#00758f', font:'700 italic' },
+    { name:'Python',     abbr:'Py',       bg:'#f7c948', fg:'#1a1a2e', font:'900' },
+    { name:'Express',    abbr:'Ex',       bg:'#ffffff', fg:'#222222', font:'300' },
+    { name:'Tailwind',   abbr:'Tw',       bg:'#38bdf8', fg:'#ffffff', font:'700' },
+    { name:'React Native',abbr:'RN',      bg:'#61dafb', fg:'#1a1a2e', font:'700' },
+    { name:'PHP',        abbr:'php',      bg:'#8993be', fg:'#ffffff', font:'700 italic' },
+    { name:'Git',        abbr:'Git',      bg:'#f05033', fg:'#ffffff', font:'700' },
+    { name:'TensorFlow', abbr:'TF',       bg:'#ff6f00', fg:'#ffffff', font:'900' },
+    { name:'GSAP',       abbr:'GSAP',     bg:'#88ce02', fg:'#000000', font:'900' },
+    { name:'Figma',      abbr:'Fig',      bg:'#f24e1e', fg:'#ffffff', font:'700' },
+    { name:'Expo',       abbr:'Expo',     bg:'#ffffff', fg:'#000020', font:'300' },
+    { name:'Three.js',   abbr:'3js',      bg:'#ffffff', fg:'#000000', font:'700' },
+  ];
+
+  // ── BUILD CANVAS TEXTURE for each ball ──
+  // Exactly like in video: white/pearl sphere, logo printed large
+  function makeTexture(tech) {
+    const sz = 512;
+    const cv = document.createElement('canvas');
+    cv.width = sz; cv.height = sz;
+    const c  = cv.getContext('2d');
+    const cx = sz / 2, cy = sz / 2, r = sz / 2;
+
+    // ── 1. WHITE PEARL BASE — exactly like video ──
+    // The balls in the video are pure white/off-white with 3D shading
+    const base = c.createRadialGradient(cx - r*.28, cy - r*.3, r*.02, cx + r*.08, cy + r*.08, r*1.05);
+    base.addColorStop(0,    '#ffffff');
+    base.addColorStop(0.3,  '#f8f9fc');
+    base.addColorStop(0.65, '#e8ecf5');
+    base.addColorStop(0.88, '#c8cee0');
+    base.addColorStop(1,    '#a0a8c0');
+    c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2);
+    c.fillStyle = base; c.fill();
+
+    // ── 2. COLOURED LOGO PATCH — the branded section ──
+    // In the video: JS has yellow patch, TS has blue, React has cyan etc.
+    // It occupies roughly bottom-left to center of the ball
+    c.save();
+    c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.clip();
+
+    if (tech.bg !== '#ffffff') {
+      // Coloured patch — radial from bottom-left like in video
+      const patch = c.createRadialGradient(cx - r*.2, cy + r*.2, 0, cx - r*.1, cy + r*.1, r * 1.1);
+      patch.addColorStop(0,   tech.bg + 'ff');
+      patch.addColorStop(0.5, tech.bg + 'cc');
+      patch.addColorStop(0.8, tech.bg + '55');
+      patch.addColorStop(1,   tech.bg + '00');
+      c.fillStyle = patch;
+      c.fillRect(0, 0, sz, sz);
+    }
+    c.restore();
+
+    // ── 3. AMBIENT OCCLUSION (dark edges bottom/sides) ──
+    c.save();
+    c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.clip();
+    const ao = c.createRadialGradient(cx, cy, r * .35, cx, cy, r);
+    ao.addColorStop(0,   'rgba(0,0,0,0)');
+    ao.addColorStop(0.75,'rgba(0,0,0,0.04)');
+    ao.addColorStop(1,   'rgba(0,0,0,0.45)');
+    c.fillStyle = ao; c.fillRect(0, 0, sz, sz);
+    c.restore();
+
+    // ── 4. TOP SPECULAR HIGHLIGHT — big bright spot ──
+    c.save();
+    c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.clip();
+    const spec = c.createRadialGradient(cx - r*.3, cy - r*.35, 0, cx - r*.2, cy - r*.2, r * .58);
+    spec.addColorStop(0,   'rgba(255,255,255,1)');
+    spec.addColorStop(0.25,'rgba(255,255,255,0.75)');
+    spec.addColorStop(0.6, 'rgba(255,255,255,0.2)');
+    spec.addColorStop(1,   'rgba(255,255,255,0)');
+    c.fillStyle = spec; c.fillRect(0, 0, sz, sz);
+    c.restore();
+
+    // ── 5. SECONDARY SMALL GLINT ──
+    c.save();
+    c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.clip();
+    const g2 = c.createRadialGradient(cx + r*.35, cy - r*.38, 0, cx + r*.35, cy - r*.38, r * .2);
+    g2.addColorStop(0, 'rgba(255,255,255,0.7)');
+    g2.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = g2; c.fillRect(0, 0, sz, sz);
+    c.restore();
+
+    // ── 6. TECH LABEL — large, like in video ──
+    c.save();
+    c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.clip();
+
+    const label = tech.abbr;
+    // font size scales with label length — shorter = bigger
+    const fs = Math.round(sz * (label.length <= 2 ? 0.28 : label.length <= 4 ? 0.22 : 0.18));
+
+    c.font         = `${tech.font} ${fs}px Arial, sans-serif`;
+    c.textAlign    = 'center';
+    c.textBaseline = 'middle';
+    // text color — use fg, but also add shadow for depth
+    c.shadowColor  = 'rgba(0,0,0,0.3)';
+    c.shadowBlur   = 8;
+    c.shadowOffsetX = 2;
+    c.shadowOffsetY = 3;
+    c.fillStyle    = tech.fg;
+    // draw text slightly off-center (lower-right bias like in video)
+    c.fillText(label, cx + sz*.04, cy + sz*.06);
+    c.restore();
+
+    return cv;
+  }
+
+  // ── THREE.JS SETUP ──
+  const section = document.getElementById('techstack');
+  if (!section) { console.error('No #techstack element found'); return; }
+
+  // Create canvas if not provided
+  let canvas = canvasId
+    ? document.getElementById(canvasId)
+    : document.getElementById('ts-canvas');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.style.cssText = 'width:100%;height:600px;display:block;';
+    section.appendChild(canvas);
+  }
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0); // transparent — bg comes from CSS
+
+  const scene  = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(42, 2, 0.1, 200);
+  camera.position.z = 28;
+
+  // ── LIGHTING — key for that white/pearl 3D look ──
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+
+  // Main key light (top-left front — creates the big specular)
+  const key = new THREE.DirectionalLight(0xffffff, 1.4);
+  key.position.set(-5, 8, 12); scene.add(key);
+
+  // Fill light (right, softer)
+  const fill = new THREE.DirectionalLight(0xe8eeff, 0.5);
+  fill.position.set(8, -2, 8); scene.add(fill);
+
+  // Rim light from behind (gives edge definition like in video)
+  const rim = new THREE.DirectionalLight(0xffd0f0, 0.35);
+  rim.position.set(0, -6, -10); scene.add(rim);
+
+  // Bottom fill (prevents total black underside)
+  const bot = new THREE.DirectionalLight(0xdde8ff, 0.25);
+  bot.position.set(0, -10, 5); scene.add(bot);
+
+  // ── SPHERE GEOMETRY — high poly for smooth look ──
+  const geo = new THREE.SphereGeometry(1, 64, 64);
+
+  // ── CREATE BALLS ──
+  const balls = TECHS.map((tech, i) => {
+    // Build canvas texture
+    const cvTex  = makeTexture(tech);
+    const tex    = new THREE.CanvasTexture(cvTex);
+    tex.needsUpdate = true;
+
+    const mat = new THREE.MeshStandardMaterial({
+      map:       tex,
+      roughness: 0.12,   // low roughness = more shine
+      metalness: 0.05,
+      envMapIntensity: 1,
+    });
+
+    const r    = 0.85 + Math.random() * 0.5; // varied sizes like in video
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.scale.setScalar(r);
+
+    // Spread in a loose cluster — like in video (horizontal spread)
+    const col   = i % 6;
+    const row   = Math.floor(i / 6);
+    mesh.position.set(
+      (col - 2.5) * 2.6 + (Math.random() - .5) * 1.2,
+      (1 - row)   * 2.4 + (Math.random() - .5) * 1.0,
+      (Math.random() - .5) * 3
+    );
+
+    mesh.userData = {
+      r,
+      vx: (Math.random() - .5) * .018,
+      vy: (Math.random() - .5) * .018,
+      vz: (Math.random() - .5) * .008,
+      rotX: (Math.random() - .5) * .006,
+      rotY: (Math.random() - .5) * .006,
+      baseX: mesh.position.x,
+      baseY: mesh.position.y,
+    };
+
+    scene.add(mesh);
+    return mesh;
+  });
+
+  // ── RESIZE ──
+  function resize() {
+    const W = canvas.clientWidth;
+    const H = canvas.clientHeight || 600;
+    renderer.setSize(W, H, false);
+    camera.aspect = W / H;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // ── MOUSE ──
+  let mx = 0, my = 0;
+  window.addEventListener('mousemove', e => {
+    mx = (e.clientX / window.innerWidth)  * 2 - 1;
+    my = (e.clientY / window.innerHeight) * 2 - 1;
+  });
+
+  // ── PHYSICS: keep balls separated ──
+  function separate() {
+    for (let i = 0; i < balls.length; i++) {
+      for (let j = i + 1; j < balls.length; j++) {
+        const a = balls[i], b = balls[j];
+        const dx = b.position.x - a.position.x;
+        const dy = b.position.y - a.position.y;
+        const dz = b.position.z - a.position.z;
+        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz) || .001;
+        const minD = a.userData.r + b.userData.r + .08;
+        if (dist < minD) {
+          const ov = (minD - dist) * .5;
+          const nx = dx/dist, ny = dy/dist, nz = dz/dist;
+          a.position.x -= nx*ov*.5; a.position.y -= ny*ov*.5; a.position.z -= nz*ov*.5;
+          b.position.x += nx*ov*.5; b.position.y += ny*ov*.5; b.position.z += nz*ov*.5;
+          // velocity bounce
+          const rv = (a.userData.vx - b.userData.vx)*nx
+                   + (a.userData.vy - b.userData.vy)*ny;
+          if (rv > 0) {
+            a.userData.vx -= rv*nx*.4; a.userData.vy -= rv*ny*.4;
+            b.userData.vx += rv*nx*.4; b.userData.vy += rv*ny*.4;
+          }
+        }
+      }
+    }
+  }
+
+  // ── ANIMATION LOOP ──
+  function animate() {
+    requestAnimationFrame(animate);
+
+    balls.forEach(m => {
+      const d = m.userData;
+
+      // gentle float toward their resting cluster position
+      const tdx = d.baseX - m.position.x;
+      const tdy = d.baseY - m.position.y;
+      d.vx += tdx * .004;
+      d.vy += tdy * .004;
+
+      // subtle mouse influence (camera sway, not ball movement)
+      // balls gently shift opposite to mouse
+      d.vx += mx * .0008;
+      d.vy -= my * .0008;
+
+      // damping
+      d.vx *= .96; d.vy *= .96; d.vz *= .96;
+
+      // bounds
+      const lx = 9, ly = 5, lz = 4;
+      if (Math.abs(m.position.x) > lx) d.vx -= Math.sign(m.position.x) * .02;
+      if (Math.abs(m.position.y) > ly) d.vy -= Math.sign(m.position.y) * .02;
+      if (Math.abs(m.position.z) > lz) d.vz -= Math.sign(m.position.z) * .02;
+
+      m.position.x += d.vx;
+      m.position.y += d.vy;
+      m.position.z += d.vz;
+
+      // slow spin on each ball
+      m.rotation.x += d.rotX;
+      m.rotation.y += d.rotY;
+    });
+
+    separate();
+
+    // subtle camera sway with mouse
+    camera.position.x += (mx * 1.5 - camera.position.x) * .04;
+    camera.position.y += (-my * 0.8 - camera.position.y) * .04;
+    camera.lookAt(0, 0, 0);
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+}
