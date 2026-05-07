@@ -58,12 +58,6 @@ html,body{
     background-color: #f1f1f1;
 }
 
-#page4{
-    position: relative;
-    height: 100vh;
-    width: 100vw;
-    background-color: #f1f1f1;
-}
 canvas{
     position: relative;
     z-index: 9;
@@ -201,8 +195,11 @@ canvas{
     font-size: 70px;
 }
 
+#right-text{
+    margin-left: -6rem;
+}
 
-.ts-heading{
-        text-align: center;
-        padding-top: 10rem;
-    }
+
+#left-text{
+    margin-right: -7rem;
+}
